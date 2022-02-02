@@ -12,6 +12,7 @@
 #include <string.h>
 #include <iostream>
 #include <thread> 
+#include <future>
 
 #include "interface.h"
 
@@ -45,12 +46,15 @@ int main(int argc, char** argv)
 
 		struct Reply reply = process_command(sockfd, command);
 		display_reply(command, reply);
-		
-		touppercase(command, strlen(command) - 1);
-		if (strncmp(command, "JOIN", 4) == 0) {
-			printf("Now you are in the chatmode\n");
-			process_chatmode(argv[1],sockfd);
+		if(reply.status == SUCCESS) {
+			touppercase(command, strlen(command) - 1);
+			if (strncmp(command, "JOIN", 4) == 0) {
+				printf("Now you are in the chatmode\n");
+				process_chatmode(argv[1],sockfd);
+				cout<<"2"<<endl;
+			}
 		}
+		
 	
     }
 	close(sockfd);
@@ -229,15 +233,15 @@ struct Reply process_command(const int sockfd, char* command)
 }
 
 
-void *sendMessage(int sock) {
+void *sendMessage(int sock, future<void> futureObj) {
 	string input;
-	while(1) {
+	while(promObj.get() != 35) {
 		char msg[MAX_DATA];
 		memset(&msg, 0, sizeof(msg));
     	get_message(msg, MAX_DATA);
     	//cout<<"sending " << msg << endl;
 		int sendResult = send(sock, (char*)&msg, strlen(msg), 0);
-
+		
 		if (sendResult == -1) {
 	        cout << "Could not send to server." << endl;
 	    }
@@ -255,14 +259,18 @@ void *sendMessage(int sock) {
 }
     
 
-void *receiveMessage(int sock) {
+void *receiveMessage(int sock, promise<int> * promObj) {
 	
-	while(1){
+	while(promObj.get()!=35){
 		char msg[MAX_DATA];
 		memset(&msg, 0, sizeof(msg));
 		int recieved = recv(sock, (char*)&msg, sizeof(msg), 0);
 		if(recieved > 0) {
 			cout << "> " << msg<< endl;
+			//string bye = "Warning: the chatting room is going to be closed..";
+			if(strncmp(msg,"Warning:",8) ==0) {
+				promObj->set_value(35);
+			}
 			//display_message(msg);
 			//cout<<"test"<<endl;
 			//string str = string(msg,0,recieved);
@@ -310,12 +318,20 @@ void process_chatmode(const char* host, const int port)
     //    terminate the client program by pressing CTRL-C (SIGINT)
 	// ------------------------------------------------------------
 	int sockfd = port;
-
-	thread t1(sendMessage, sockfd);
-    thread t2(receiveMessage, sockfd);
+	promise<int> promiseObj;
+	promise<int> promiseObj2;
+	future<int> futureObj = promiseObj.get_future();
+	future<int> futureObj2 = promiseObj2.get_future();
+	
+	thread t1(sendMessage, sockfd, &promiseObj2);
+    thread t2(receiveMessage, sockfd, &promiseObj);
+    if(futureObj.get() > 0) {
+    	futureObj2->set_value(35);
+    }
+    // cout<<futureObj.get()<<endl;
 	t1.join();
     t2.join();
-	
+	cout<<"1"<<endl;
 }
 
 

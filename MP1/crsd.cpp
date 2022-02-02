@@ -18,6 +18,7 @@
 #include <sys/select.h> 
 #include <unordered_map>
 #include <vector>
+#include <set>
 
 
 using namespace std;
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
     unordered_map<string, vector<int> > chatrooms;
     unordered_map<int, string > clients;
     vector<string> listChatrooms;
-
+    set<int> chatmodeClients;
     while(1)
     {
         ready_sockets = current_sockets;
@@ -115,6 +116,10 @@ int main(int argc, char **argv)
                     FD_SET(client,&current_sockets);
    
                 } else {
+                    bool chatmode = false;
+                    if(chatmodeClients.find(i) != chatmodeClients.end()) {
+                        chatmode = true;
+                    }
                     memset(&msg, 0, sizeof(msg));//clear the buffer
                     int data = recv(i, (char*)&msg, sizeof(msg), 0);
                     string chatMsg = string(msg,0,data);
@@ -127,11 +132,10 @@ int main(int argc, char **argv)
                         string status = "";
                         string list ="";
                         string data="";
-                        bool chatmode = false;
                         string num_member = "";
                         cout << ">Client " << i << ": " << msg << endl;
                         touppercase(msg, strlen(msg) - 1);
-                        if(strncmp(msg, "CREATE", 6) == 0) {
+                        if(strncmp(msg, "CREATE", 6) == 0 && !chatmode) {
                             char name[150];
                             memcpy(name, &msg[7], strlen(msg)+1);
                             string s = "";
@@ -154,7 +158,7 @@ int main(int argc, char **argv)
 
                         }
                         
-                        else if(strncmp(msg, "JOIN", 4) == 0) {
+                        else if(strncmp(msg, "JOIN", 4) == 0 && !chatmode) {
                             //char name[150];
                             //memcpy(name, &msg[5], strlen(msg)+1);
                            // cout<<name;
@@ -173,12 +177,13 @@ int main(int argc, char **argv)
                                 }
                                 chatrooms.at(s).push_back(i);
                                 num_member = to_string(chatrooms.at(s).size());
+                                chatmodeClients.insert(i);
                             }
                             //cout<<"Chatroom " << s<< " has " << chatrooms.at(s).size() << " people " << endl;
 
                         }
                         
-                        else if(strncmp(msg, "DELETE", 6) == 0) {
+                        else if(strncmp(msg, "DELETE", 6) == 0 && !chatmode) {
                             char name[150];
                             memcpy(name, &msg[7], strlen(msg)+1);
                             string s = "";
@@ -190,18 +195,28 @@ int main(int argc, char **argv)
                                 status = "2";
                             } else {
                                 status = "0";
-                                chatrooms.erase(s);
-                            
+                                string bye = "Warning: the chatting room is going to be closed..";
+                               
+                                
+                                for(int mem : chatrooms.at(s)) {
+                                    chatmodeClients.erase(mem);
+                                    if(mem != i) {
+                                        send(mem, bye.c_str(), bye.size()+1, 0);
+                                    }
+                                }
+                                
                                 for (int ind =0; ind<listChatrooms.size(); ind++) {
                                     if (listChatrooms.at(ind) == s) {
                                         listChatrooms.erase(listChatrooms.begin()+ind);
                                         break;
                                     }
                                 }
+                                chatrooms.erase(s);
+                                
                             }
                             cout<<"Chatrooms count: " << chatrooms.size() << endl;
 
-                        } else if(strncmp(msg, "LIST", 4) == 0) {
+                        } else if(strncmp(msg, "LIST", 4) == 0 && !chatmode) {
                             if(chatrooms.size() <1 ){
                                 status = "L";
                                 list = "";
