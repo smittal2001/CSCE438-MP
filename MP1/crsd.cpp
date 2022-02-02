@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     //also keep track of the amount of data sent as well
     unordered_map<string, vector<int> > chatrooms;
     unordered_map<int, string > clients;
-
+    vector<string> listChatrooms;
 
     while(1)
     {
@@ -139,13 +139,10 @@ int main(int argc, char **argv)
                                 s = s + name[ind];
                             }
                             
-                           
-                            
-                            
                             if (chatrooms.find(s) == chatrooms.end()) {
                                 vector<int> room;
                                 chatrooms[s] = room;
-                                
+                                listChatrooms.push_back(s);
                                 status = "0";
                                 num_member = "0";
                             } else {
@@ -194,17 +191,24 @@ int main(int argc, char **argv)
                             } else {
                                 status = "0";
                                 chatrooms.erase(s);
+                            
+                                for (int ind =0; ind<listChatrooms.size(); ind++) {
+                                    if (listChatrooms.at(ind) == s) {
+                                        listChatrooms.erase(listChatrooms.begin()+ind);
+                                        break;
+                                    }
+                                }
                             }
                             cout<<"Chatrooms count: " << chatrooms.size() << endl;
 
                         } else if(strncmp(msg, "LIST", 4) == 0) {
                             if(chatrooms.size() <1 ){
                                 status = "L";
-                                list = " ";
+                                list = "";
                             } else {
                                 status = "L";
-                                for(auto it : chatrooms) {
-                                    list = it.first + ","+list;
+                                for(int i=0; i<listChatrooms.size();i++) {
+                                    list+= listChatrooms.at(i)+",";
                                 }
                                 
                             }

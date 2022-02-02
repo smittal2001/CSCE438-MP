@@ -196,7 +196,7 @@ struct Reply process_command(const int sockfd, char* command)
 	// REMOVE below code and write your own Reply.
 	struct Reply reply;
 	
-
+	reply.port = atoi(port.c_str());
 	if(rep.substr(0,1) == "0") {
 		reply.status = SUCCESS;
 		reply.num_member = atoi(rep.substr(2).c_str());
@@ -215,11 +215,16 @@ struct Reply process_command(const int sockfd, char* command)
 	} 
 	else if(rep.substr(0,1) == "L" ) {
 		reply.status = SUCCESS;
+		// string p =  rep.substr(2);
+		// for (int i = 0; i < p.length(); i++) {
+  //      	reply.list_room[i] = p[i];
+	 //       cout << p[i] <<" " << reply.list_room<< endl;
+	 //   }
 		strcpy(reply.list_room, rep.substr(2).c_str());
 	}
 	
 	
-	reply.port = atoi(port.c_str());
+	
 	return reply;
 }
 
