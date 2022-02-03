@@ -73,15 +73,7 @@ int main(int argc, char** argv)
  */
 int connect_to(const char *host, const int port)
 {
-	// ------------------------------------------------------------
-	// GUIDE :
-	// In this function, you are suppose to connect to the server.
-	// After connection is established, you are ready to send or
-	// receive the message to/from the server.
-	// 
-	// Finally, you should return the socket fildescriptor
-	// so that other functions such as "process_command" can use it
-	// ------------------------------------------------------------
+	
 	int sockfd;
 	struct sockaddr_in server;
 	struct hostent* host2 = gethostbyname(host); 
@@ -112,97 +104,40 @@ int connect_to(const char *host, const int port)
  */
 struct Reply process_command(const int sockfd, char* command)
 {
-	// ------------------------------------------------------------
-	// GUIDE 1:
-	// In this function, you are supposed to parse a given command
-	// and create your own message in order to communicate with
-	// the server. Surely, you can use the input command without
-	// any changes if your server understand it. The given command
-    // will be one of the followings:
-	//
-	// CREATE <name>
-	// DELETE <name>
-	// JOIN <name>
-    // LIST
-	//
-	// -  "<name>" is a chatroom name that you want to create, delete,
-	// or join.
-	// 
-	// - CREATE/DELETE/JOIN and "<name>" are separated by one space.
-	// ------------------------------------------------------------
-
-
-	// ------------------------------------------------------------
-	// GUIDE 2:
-	// After you create the message, you need to send it to the
-	// server and receive a result from the server.
-	// ------------------------------------------------------------
-
-
-	// ------------------------------------------------------------
-	// GUIDE 3:
-	// Then, you should create a variable of Reply structure
-	// provided by the interface and initialize it according to
-	// the result.
-	//
-	// For example, if a given command is "JOIN room1"
-	// and the server successfully created the chatroom,
-	// the server will reply a message including information about
-	// success/failure, the number of members and port number.
-	// By using this information, you should set the Reply variable.
-	// the variable will be set as following:
-	//
-	// Reply reply;
-	// reply.status = SUCCESS;
-	// reply.num_member = number;
-	// reply.port = port;
-	// 
-	// "number" and "port" variables are just an integer variable
-	// and can be initialized using the message fomr the server.
-	//
-	// For another example, if a given command is "CREATE room1"
-	// and the server failed to create the chatroom becuase it
-	// already exists, the Reply varible will be set as following:
-	//
-	// Reply reply;
-	// reply.status = FAILURE_ALREADY_EXISTS;
-    // 
-    // For the "LIST" command,
-    // You are suppose to copy the list of chatroom to the list_room
-    // variable. Each room name should be seperated by comma ','.
-    // For example, if given command is "LIST", the Reply variable
-    // will be set as following.
-    //
-    // Reply reply;
-    // reply.status = SUCCESS;
-    // strcpy(reply.list_room, list);
-    // 
-    // "list" is a string that contains a list of chat rooms such 
-    // as "r1,r2,r3,"
-	// ------------------------------------------------------------
-
+	// create a msg buffer
 	char msg[1500]; 
-
+	
+	// clear the buffer and copy the command
 	memset(&msg, 0, sizeof(msg));
 	strcpy(msg, command);
 	
+	// send the command to the server
 	send(sockfd, (char*)&msg, strlen(msg), 0);
-
+	
+	// clear the buffer and recieve the message from the server
 	memset(&msg, 0, sizeof(msg));
 	recv(sockfd, (char*)&msg, sizeof(msg), 0);
 	
+	// store the reply in a string
 	string rep = "";
     for (int ind = 0; ind < strlen(msg); ind++) {
        rep += msg[ind];
     }
 	
+	//store the port in a seperate string
 	string port = rep.substr(0,4);
+	
+	//change the string to after the port
 	rep=rep.substr(4);
-	// REMOVE below code and write your own Reply.
+
 	struct Reply reply;
 	
+	//store the port in the reply
 	reply.port = atoi(port.c_str());
+	
+	//check what the statys us 
 	if(rep.substr(0,1) == "0") {
+		//if success then store the number as well
 		reply.status = SUCCESS;
 		reply.num_member = atoi(rep.substr(2).c_str());
 	} 
@@ -219,49 +154,77 @@ struct Reply process_command(const int sockfd, char* command)
 		reply.status = FAILURE_UNKNOWN;
 	} 
 	else if(rep.substr(0,1) == "L" ) {
+		//store the status in the reply and then get the list 
 		reply.status = SUCCESS;
 		strcpy(reply.list_room, rep.substr(2).c_str());
 	}
 	
-	
-	
 	return reply;
 }
 
-
+/* 
+ * Constant process of sending a message that will be stopped
+ * when the chatroom gets deleted
+ *
+ * @parameter sockfd   socket file descriptor to commnunicate
+ *                     with the server
+ */
 void *sendMessage(int sock) {
-	string input;
+	//keep going until room is closed
 	while(!stop) {
+		//create char buffer
 		char msg[MAX_DATA];
-		memset(&msg, 0, sizeof(msg));
-    	get_message(msg, MAX_DATA);
-    	//cout<<"sending " << msg << endl;
-		int sendResult = send(sock, (char*)&msg, strlen(msg), 0);
-		cout << stop << endl;
 		
+		//clear the buffer
+		memset(&msg, 0, sizeof(msg));
+		
+		// get the message from the user
+    	get_message(msg, MAX_DATA);
+    	
+    	// send the message to the server
+		int sendResult = send(sock, (char*)&msg, strlen(msg), 0);
+
 		if (sendResult == -1) {
 	        cout << "Could not send to server." << endl;
 	    }
     }
 }
     
-
+/* 
+ * Constant process of recieving a message that will be stopped
+ * when the chatroom gets deleted
+ *
+ * @parameter sockfd   socket file descriptor to commnunicate
+ *                     with the server
+ */
 void *receiveMessage(int sock, promise<int> * promObj) {
-	
 	while(1){
+		//create char buffer
 		char msg[MAX_DATA];
+		
+		//clear the buffer
 		memset(&msg, 0, sizeof(msg));
+		
+		// recieve the message to the server
 		int recieved = recv(sock, (char*)&msg, sizeof(msg), 0);
+		
 		if(recieved > 0) {
+			//display the message
 			cout << "> " << msg<< endl;
+			
+			//check if it is a chatroom is closing message
 			if(strncmp(msg,"Warning:",8) ==0) {
+				//assign a positive value to the promise 
 				promObj->set_value(35);
+				
+				//stop the thread
 				break;
 			}
 		}
 	}
 	
 }
+
 /* 
  * Get into the chat mode
  * 
@@ -270,45 +233,21 @@ void *receiveMessage(int sock, promise<int> * promObj) {
  */
 void process_chatmode(const char* host, const int port)
 {
-	// ------------------------------------------------------------
-	// GUIDE 1:
-	// In order to join the chatroom, you are supposed to connect
-	// to the server using host and port.
-	// You may re-use the function "connect_to".
-	// ------------------------------------------------------------
-
-	// ------------------------------------------------------------
-	// GUIDE 2:
-	// Once the client have been connected to the server, we need
-	// to get a message from the user and send it to server.
-	// At the same time, the client should wait for a message from
-	// the server.
-	// ------------------------------------------------------------
-	
-    // ------------------------------------------------------------
-    // IMPORTANT NOTICE:
-    // 1. To get a message from a user, you should use a function
-    // "void get_message(char*, int);" in the interface.h file
-    // 
-    // 2. To print the messages from other members, you should use
-    // the function "void display_message(char*)" in the interface.h
-    //
-    // 3. Once a user entered to one of chatrooms, there is no way
-    //    to command mode where the user  enter other commands
-    //    such as CREATE,DELETE,LIST.
-    //    Don't have to worry about this situation, and you can 
-    //    terminate the client program by pressing CTRL-C (SIGINT)
-	// ------------------------------------------------------------
+	// get the socket file discriptor of the client
 	int sockfd = port;
 
-	
+	// create a promise object for the revieving thread
 	promise<int> promiseObj;
+	
+	// create a future object to signify when to stop the threads
 	future<int> futureObj = promiseObj.get_future();
+	
 	thread t1(sendMessage, sockfd);
     thread t2(receiveMessage, sockfd, &promiseObj);
     
-    
+    //check if we have recieved the goodbye message
     if(futureObj.get() > 0) {
+    	//set to true to stop the sending thread
     	stop=true;
     }
 	t1.join();
