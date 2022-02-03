@@ -13,11 +13,12 @@
 #include <iostream>
 #include <thread> 
 #include <future>
+#include <atomic>
 
 #include "interface.h"
 
 using namespace std;
-
+atomic<bool> stop(false);
 
 /*
  * TODO: IMPLEMENT BELOW THREE FUNCTIONS
@@ -51,7 +52,7 @@ int main(int argc, char** argv)
 			if (strncmp(command, "JOIN", 4) == 0) {
 				printf("Now you are in the chatmode\n");
 				process_chatmode(argv[1],sockfd);
-				cout<<"2"<<endl;
+				display_title();
 			}
 		}
 		
@@ -219,11 +220,6 @@ struct Reply process_command(const int sockfd, char* command)
 	} 
 	else if(rep.substr(0,1) == "L" ) {
 		reply.status = SUCCESS;
-		// string p =  rep.substr(2);
-		// for (int i = 0; i < p.length(); i++) {
-  //      	reply.list_room[i] = p[i];
-	 //       cout << p[i] <<" " << reply.list_room<< endl;
-	 //   }
 		strcpy(reply.list_room, rep.substr(2).c_str());
 	}
 	
@@ -233,9 +229,9 @@ struct Reply process_command(const int sockfd, char* command)
 }
 
 
-void *sendMessage(int sock, future<void> futureObj) {
+void *sendMessage(int sock) {
 	string input;
-	while(promObj.get() != 35) {
+	while(stop) {
 		char msg[MAX_DATA];
 		memset(&msg, 0, sizeof(msg));
     	get_message(msg, MAX_DATA);
@@ -245,37 +241,22 @@ void *sendMessage(int sock, future<void> futureObj) {
 		if (sendResult == -1) {
 	        cout << "Could not send to server." << endl;
 	    }
-  //  	if(strlen(msg) > 0) {
-		// 	cout << "sending..." << endl;
-		// 	//int sendResult = send(sock, (char*)&msg, strlen(msg), 0);
-		// 	int sendResult = send(sock, input.c_str(), input.size() + 1, 0);
-
-		// 	if (sendResult == -1) {
-		//         cout << "Could not send to server." << endl;
-		//     }
-		// }
-
     }
 }
     
 
 void *receiveMessage(int sock, promise<int> * promObj) {
 	
-	while(promObj.get()!=35){
+	while(1){
 		char msg[MAX_DATA];
 		memset(&msg, 0, sizeof(msg));
 		int recieved = recv(sock, (char*)&msg, sizeof(msg), 0);
 		if(recieved > 0) {
 			cout << "> " << msg<< endl;
-			//string bye = "Warning: the chatting room is going to be closed..";
 			if(strncmp(msg,"Warning:",8) ==0) {
 				promObj->set_value(35);
+				break;
 			}
-			//display_message(msg);
-			//cout<<"test"<<endl;
-			//string str = string(msg,0,recieved);
-			//cout<<str << endl;
-		
 		}
 	}
 	
@@ -318,20 +299,19 @@ void process_chatmode(const char* host, const int port)
     //    terminate the client program by pressing CTRL-C (SIGINT)
 	// ------------------------------------------------------------
 	int sockfd = port;
-	promise<int> promiseObj;
-	promise<int> promiseObj2;
-	future<int> futureObj = promiseObj.get_future();
-	future<int> futureObj2 = promiseObj2.get_future();
+
 	
-	thread t1(sendMessage, sockfd, &promiseObj2);
+	promise<int> promiseObj;
+	future<int> futureObj = promiseObj.get_future();
+	thread t1(sendMessage, sockfd);
     thread t2(receiveMessage, sockfd, &promiseObj);
+    
+    
     if(futureObj.get() > 0) {
-    	futureObj2->set_value(35);
+    	stop=true;
     }
-    // cout<<futureObj.get()<<endl;
 	t1.join();
     t2.join();
-	cout<<"1"<<endl;
 }
 
 

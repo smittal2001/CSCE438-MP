@@ -23,7 +23,7 @@
 
 using namespace std;
 
-//Server side
+
 int main(int argc, char **argv)
 {
     //for the server, we only need to specify a port number
@@ -45,8 +45,7 @@ int main(int argc, char **argv)
     servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servAddr.sin_port = htons(port);
  
-    //open stream oriented socket with internet address
-    //also keep track of the socket descriptor
+    
     int serverSd = socket(AF_INET, SOCK_STREAM, 0);
     if(serverSd < 0)
     {
@@ -63,8 +62,7 @@ int main(int argc, char **argv)
     }
 
 
-    cout << "Waiting for a client to connect..." << endl;
-    //listen for up to 5 requests at a time
+    
     listen(serverSd, SOMAXCONN);
 
 
@@ -75,20 +73,11 @@ int main(int argc, char **argv)
 
    
 
-    //receive a request from client using accept
-    //we need a new address to connect with the client
+   
     sockaddr_in newSockAddr;
     socklen_t newSockAddrSize = sizeof(newSockAddr);
-    //accept, create a new socket descriptor to 
-    //handle the new connection with client
-    // int newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
+   
 
-
-    
-    //lets keep track of the session time
-    struct timeval start1, end1;
-    gettimeofday(&start1, NULL);
-    //also keep track of the amount of data sent as well
     unordered_map<string, vector<int> > chatrooms;
     unordered_map<int, string > clients;
     vector<string> listChatrooms;
@@ -112,7 +101,6 @@ int main(int argc, char **argv)
                         cerr << "Error accepting request from client!" << endl;
                         exit(1);
                     }
-                    cout << "Connected with client " << client<< endl;
                     FD_SET(client,&current_sockets);
    
                 } else {
@@ -125,7 +113,6 @@ int main(int argc, char **argv)
                     string chatMsg = string(msg,0,data);
                     
                     if(data<= 0){
-                        cout<<"---------"<<endl;
                         close(i);
                         FD_CLR(i,&current_sockets);
                     } else {
@@ -133,7 +120,7 @@ int main(int argc, char **argv)
                         string list ="";
                         string data="";
                         string num_member = "";
-                        cout << ">Client " << i << ": " << msg << endl;
+                        //cout << ">Client " << i << ": " << msg << endl;
                         touppercase(msg, strlen(msg) - 1);
                         if(strncmp(msg, "CREATE", 6) == 0 && !chatmode) {
                             char name[150];
@@ -153,19 +140,12 @@ int main(int argc, char **argv)
                                 status = "1";
                             }
                             
-                            cout<<"Chatroom " << s<< " has " << chatrooms.at(s).size() << " people " << endl;
-
-
                         }
                         
                         else if(strncmp(msg, "JOIN", 4) == 0 && !chatmode) {
-                            //char name[150];
-                            //memcpy(name, &msg[5], strlen(msg)+1);
-                           // cout<<name;
+                           
                             string s(msg);
-                            // for (int ind = 0; ind < strlen(msg); ind++) {
-                            //     s = s + msg[ind];
-                            // }
+                           
                             s = s.substr(5);
                             if (chatrooms.find(s) == chatrooms.end()) {
                                 status = "2";
@@ -179,8 +159,7 @@ int main(int argc, char **argv)
                                 num_member = to_string(chatrooms.at(s).size());
                                 chatmodeClients.insert(i);
                             }
-                            //cout<<"Chatroom " << s<< " has " << chatrooms.at(s).size() << " people " << endl;
-
+                            
                         }
                         
                         else if(strncmp(msg, "DELETE", 6) == 0 && !chatmode) {
@@ -214,7 +193,6 @@ int main(int argc, char **argv)
                                 chatrooms.erase(s);
                                 
                             }
-                            cout<<"Chatrooms count: " << chatrooms.size() << endl;
 
                         } else if(strncmp(msg, "LIST", 4) == 0 && !chatmode) {
                             if(chatrooms.size() <1 ){
@@ -228,7 +206,7 @@ int main(int argc, char **argv)
                                 
                             }
                         } else {
-                            cout<<msg<<endl;
+                            //cout<<msg<<endl;
                             chatmode = true;
                             string chatroom = clients.at(i);
                             for(int mem : chatrooms.at(chatroom)) {
@@ -238,8 +216,7 @@ int main(int argc, char **argv)
                             }
                         }
                         
-                        // string data;
-                        // getline(cin, data);
+                        
                         if(!chatmode) {
                             if(status=="L") {
                                 data = status + " " + list;
@@ -248,7 +225,7 @@ int main(int argc, char **argv)
                             }
                             
                             data = to_string(port)  + data;
-                            memset(&msg, 0, sizeof(msg)); //clear the buffer
+                            memset(&msg, 0, sizeof(msg)); 
                             strcpy(msg, data.c_str());
                             send(i, (char*)&msg, strlen(msg), 0);
                         }
@@ -261,52 +238,22 @@ int main(int argc, char **argv)
 
         }
 
-        //receive a message from the client (listen)
-        // cout << "Awaiting client response..." << endl;
-        // memset(&msg, 0, sizeof(msg));//clear the buffer
-        // recv(newSd, (char*)&msg, sizeof(msg), 0);
-        // touppercase(msg, strlen(msg) - 1);
-
-        // if(!strcmp(msg, "EXIT"))
-        // {
-        //     cout << "Client has quit the session" << endl;
-        //     break;
-        // }
-        // cout << "Client: " << msg << endl;
-        // cout << ">";
-        // string data;
-        // getline(cin, data);
-        // memset(&msg, 0, sizeof(msg)); //clear the buffer
-        // strcpy(msg, data.c_str());
-        // if(data == "exit")
-        // {
-        //     //send to the client that server has closed the connection
-        //     send(newSd, (char*)&msg, strlen(msg), 0);
-        //     break;
-        // }
-        // //send the message to client
-        // send(newSd, (char*)&msg, strlen(msg), 0);
-    }
-    //we need to close the socket descriptors after we're all done
+       
     FD_CLR(serverSd, &current_sockets);
     close(serverSd);
 
     for(int i=0; i<FD_SETSIZE; i++)
 	{
-		// Get the socket number
         if(FD_ISSET(i, &current_sockets)) {
-    		// Send the goodbye message
     		string bye = "Goodbye...";
             send(i, bye.c_str(), bye.size() + 1, 0);
 
-    		// Remove it from the master file list and close the socket
     		FD_CLR(i, &current_sockets);
     		close(i);
         }
 		
 	}
-    gettimeofday(&end1, NULL);
-    // close(newSd);
+    
    
     return 0;   
 }
