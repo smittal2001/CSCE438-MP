@@ -106,10 +106,12 @@ int main(int argc, char **argv)
                 } else {
                     bool chatmode = false;
                     if(chatmodeClients.find(i) != chatmodeClients.end()) {
+                        cout << i << " is in chatmode " <<endl;
                         chatmode = true;
                     }
                     memset(&msg, 0, sizeof(msg));//clear the buffer
                     int data = recv(i, (char*)&msg, sizeof(msg), 0);
+                    cout << "Client " << i << " " << msg << endl;
                     string chatMsg = string(msg,0,data);
                     
                     if(data<= 0){
@@ -120,7 +122,7 @@ int main(int argc, char **argv)
                         string list ="";
                         string data="";
                         string num_member = "";
-                        //cout << ">Client " << i << ": " << msg << endl;
+                        cout << ">Client " << i << ": " << msg << endl;
                         touppercase(msg, strlen(msg) - 1);
                         if(strncmp(msg, "CREATE", 6) == 0 && !chatmode) {
                             char name[150];
@@ -211,6 +213,7 @@ int main(int argc, char **argv)
                             string chatroom = clients.at(i);
                             for(int mem : chatrooms.at(chatroom)) {
                                 if(mem != i) {
+                                    cout << i << " " << chatMsg <<endl;
                                     send(mem, chatMsg.c_str(), chatMsg.size()+1, 0);
                                 }
                             }
@@ -238,15 +241,15 @@ int main(int argc, char **argv)
 
         }
 
-       
+    }
     FD_CLR(serverSd, &current_sockets);
     close(serverSd);
 
     for(int i=0; i<FD_SETSIZE; i++)
 	{
         if(FD_ISSET(i, &current_sockets)) {
-    		string bye = "Goodbye...";
-            send(i, bye.c_str(), bye.size() + 1, 0);
+    // 		string bye = "Goodbye...";
+    //         send(i, bye.c_str(), bye.size() + 1, 0);
 
     		FD_CLR(i, &current_sockets);
     		close(i);

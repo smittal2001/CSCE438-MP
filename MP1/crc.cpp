@@ -231,12 +231,13 @@ struct Reply process_command(const int sockfd, char* command)
 
 void *sendMessage(int sock) {
 	string input;
-	while(stop) {
+	while(!stop) {
 		char msg[MAX_DATA];
 		memset(&msg, 0, sizeof(msg));
     	get_message(msg, MAX_DATA);
     	//cout<<"sending " << msg << endl;
 		int sendResult = send(sock, (char*)&msg, strlen(msg), 0);
+		cout << stop << endl;
 		
 		if (sendResult == -1) {
 	        cout << "Could not send to server." << endl;
