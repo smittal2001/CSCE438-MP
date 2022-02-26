@@ -275,9 +275,6 @@ int main(int argc, char **argv)
                                 //Chatroom does exist set status to 0 - SUCCESS
                                 status = "0";
                     
-                                // if(clients.find(selectedSock) == clients.end()) {
-                                //     clients[selectedSock] = s;
-                                // }
                                 // Store the client's chatroom in the map with their ID as the key
                                 clients[selectedSock] = s;
 
@@ -288,7 +285,7 @@ int main(int argc, char **argv)
                                 num_member = to_string(chatrooms.at(s).size());
 
                                 //insert the clients to chatmode set
-                                chatmodeClients.insert(i);
+                                chatmodeClients.insert(selectedSock);
                             }
                             
                         }
@@ -343,6 +340,9 @@ int main(int argc, char **argv)
 
                                 //erase the chatroom from the map
                                 chatrooms.erase(s);   
+                                
+                                //erase the clients chatroom value and key
+                                clients.erase(selectedSock);
                             }
 
                         }
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
                             if(chatmode) {
                                 //get the chatroom the client is in
                                 string chatroom = clients.at(selectedSock);
-
+                                
                                 //loop through all the clients in the chatroom
                                 for(int mem : chatrooms.at(chatroom)) {
                                     //send the message to everyone expecte the sender

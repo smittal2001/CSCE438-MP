@@ -104,29 +104,39 @@ int connect_to(const char *host, const int port)
  */
 struct Reply process_command(const int sockfd, char* command)
 {
-	
 	char msg[1500]; 
-
+	
+	// clear the buffer and copy the command
 	memset(&msg, 0, sizeof(msg));
 	strcpy(msg, command);
 	
+	// send the command to the server
 	send(sockfd, (char*)&msg, strlen(msg), 0);
-
+	
+	// clear the buffer and recieve the message from the server
 	memset(&msg, 0, sizeof(msg));
 	recv(sockfd, (char*)&msg, sizeof(msg), 0);
 	
+	// store the reply in a string
 	string rep = "";
     for (int ind = 0; ind < strlen(msg); ind++) {
        rep += msg[ind];
     }
 	
+	//store the port in a seperate string
 	string port = rep.substr(0,4);
+	
+	//change the string to after the port
 	rep=rep.substr(4);
-	// REMOVE below code and write your own Reply.
+
 	struct Reply reply;
 	
+	//store the port in the reply
 	reply.port = atoi(port.c_str());
+	
+	//check what the statys us 
 	if(rep.substr(0,1) == "0") {
+		//if success then store the number as well
 		reply.status = SUCCESS;
 		reply.num_member = atoi(rep.substr(2).c_str());
 	} 
@@ -143,11 +153,10 @@ struct Reply process_command(const int sockfd, char* command)
 		reply.status = FAILURE_UNKNOWN;
 	} 
 	else if(rep.substr(0,1) == "L" ) {
+		//store the status in the reply and then get the list 
 		reply.status = SUCCESS;
 		strcpy(reply.list_room, rep.substr(2).c_str());
 	}
-	
-	
 	
 	return reply;
 }
@@ -161,15 +170,20 @@ struct Reply process_command(const int sockfd, char* command)
  */
 
 void *sendMessage(int sock) {
-	string input;
+	//keep going until room is closed
 	while(!stop) {
+		//create char buffer
 		char msg[MAX_DATA];
-		memset(&msg, 0, sizeof(msg));
-    	get_message(msg, MAX_DATA);
-    	//cout<<"sending " << msg << endl;
-		int sendResult = send(sock, (char*)&msg, strlen(msg), 0);
-		cout << stop << endl;
 		
+		//clear the buffer
+		memset(&msg, 0, sizeof(msg));
+		
+		// get the message from the user
+    	get_message(msg, MAX_DATA);
+    	
+    	// send the message to the server
+		int sendResult = send(sock, (char*)&msg, strlen(msg), 0);
+
 		if (sendResult == -1) {
 	        cout << "Could not send to server." << endl;
 	    }
@@ -177,6 +191,10 @@ void *sendMessage(int sock) {
 }
 
  /* 
+=======
+    
+/* 
+>>>>>>> 66cd9d662a9311840a48126dea54b15b258dd4bc
  * Constant process of recieving a message that will be stopped
  * when the chatroom gets deleted
  *
@@ -184,21 +202,33 @@ void *sendMessage(int sock) {
  *                     with the server
  */
 void *receiveMessage(int sock, promise<int> * promObj) {
-	
 	while(1){
+		//create char buffer
 		char msg[MAX_DATA];
+		
+		//clear the buffer
 		memset(&msg, 0, sizeof(msg));
+		
+		// recieve the message to the server
 		int recieved = recv(sock, (char*)&msg, sizeof(msg), 0);
+		
 		if(recieved > 0) {
+			//display the message
 			cout << "> " << msg<< endl;
+			
+			//check if it is a chatroom is closing message
 			if(strncmp(msg,"Warning:",8) ==0) {
+				//assign a positive value to the promise 
 				promObj->set_value(35);
+				
+				//stop the thread
 				break;
 			}
 		}
 	}
 	
 }
+
 /* 
  * Get into the chat mode
  * 
@@ -209,13 +239,20 @@ void process_chatmode(const char* host, const int port)
 {
 	int sockfd = port;
 
+	// get the socket file discriptor of the client
+	
+	// create a promise object for the revieving thread
 	promise<int> promiseObj;
+	
+	// create a future object to signify when to stop the threads
 	future<int> futureObj = promiseObj.get_future();
+	
 	thread t1(sendMessage, sockfd);
     thread t2(receiveMessage, sockfd, &promiseObj);
     
-    
+    //check if we have recieved the goodbye message
     if(futureObj.get() > 0) {
+    	//set to true to stop the sending thread
     	stop=true;
     }
 	t1.join();
