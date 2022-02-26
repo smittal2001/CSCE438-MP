@@ -268,10 +268,10 @@ void Client::processTimeline()
                         lines.insert(line);
                         ss.str(line);
                         getline(ss,temp,' ');
-                        std::string user = temp;
+                        std::string date = temp;
                         
                         getline(ss,temp,' ');
-                        std::string date = temp;
+                        std::string user = temp;
                         
                         getline(ss,temp);
                         std::string message = temp;
@@ -290,6 +290,7 @@ void Client::processTimeline()
                     ss.clear();
                     
                  }
+                 firstTime = false;
             }
         }
     });
