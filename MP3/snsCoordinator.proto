@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package snsCoordinator;
+
+import "google/protobuf/timestamp.proto";
+
+service SNSCoordinator{
+    
+    rpc Login (Request) returns (Reply) {}
+    // Bidirectional Communication to check on server interaction
+    rpc ServerCommunicate (stream HeartBeat) returns (stream HeartBeat) {}
+    
+    rpc Syncs (Request) returns (Reply) {}
+    
+}
+
+enum ServerType{
+    MASTER = 0;
+    SLAVE = 1;
+    SYNCHRONIZER = 3;
+    COORDINATOR = 4;
+}
+
+enum RequesterType{
+    CLIENT = 0;
+    SERVER = 1;
+}
+
+message Request{
+    // type of requester
+    RequesterType requester = 1;
+    // message with their port number
+    string port_number = 2;
+    // the id of the request
+    int32 id = 3;
+    // the type of server
+    ServerType server_type = 4;
+}
+
+message Reply{
+    string msg = 1;
+    string msg2 = 2;
+}
+
+message HeartBeat{
+    // id of the server
+    int32 server_id = 1;
+    // type of the server
+    ServerType server_type = 2;
+    //Time the message was sent
+    google.protobuf.Timestamp timestamp = 3;
+}

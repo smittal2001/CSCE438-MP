@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package snsSync;
+
+import "google/protobuf/timestamp.proto";
+
+service SNSSync{
+    
+    rpc new_user (SyncRequest) returns (SyncReply) {}
+    // Bidirectional Communication to check on server interaction
+    rpc new_post (SyncRequest) returns (SyncReply) {}
+    
+    rpc new_follow (SyncRequest) returns (SyncReply) {}
+    
+    rpc check_connection (SyncRequest) returns (SyncReply) {}
+}
+
+
+
+message SyncRequest{
+    // type of requester
+    string id = 1;
+    // message with their port number
+    string username = 2;
+    // the id of the request
+    string action = 3;
+    // the type of server
+    string msg = 4;
+}
+
+message SyncReply{
+    string msg = 1;
+}
+
