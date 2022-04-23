@@ -7,11 +7,14 @@ To clear the directory (and remove .txt files):
    
     make clean
 
-To run the server on port 3010:
+To start the program:
 
-    ./tsd -p 3010
+    ./start.sh
 
-To run the client  
+To run the client  (must use port 9000 as that is the coordinator port)
 
-    ./tsc -h host_addr -p 3010 -u user1
+    ./client -a host_addr -p 9000 -c id
 
+To kill the program:
+
+    ./kill.sh
